@@ -12,6 +12,7 @@ function MineSweeper(){
   this.easyButton = new DifficultyButton(0, 20, this.dbWidth, this.dbHeight, 9, 9, 10/81, 'Easy', this);
   this.mediumButton = new DifficultyButton(0, this.dbHeight+40, this.dbWidth, this.dbHeight, 16, 16, 40/256, 'Medium', this);
   this.hardButton = new DifficultyButton(0, this.dbHeight*2+60, this.dbWidth, this.dbHeight, 16, 30, 99/480, 'Hard', this);
+  this.timer = new Timer(0, 0, this.counterSize, this.counterSize);
 
   this.cellRow = this.cellCol = this.mineRatio = null;
   this.clickListenComponents = this.contextMenuListenComponents = this.renderComponents = null;
@@ -30,15 +31,15 @@ MineSweeper.prototype = {
     var canvasHeight = this.cellSize * this.cellRow + this.counterSize + 10;
     setCanvasSize(canvasWidth, canvasHeight);
 
-    var timer = new Timer(this.cellSize*this.cellCol-this.counterSize, 0, this.counterSize, this.counterSize);
-    var field = new Field(0, this.counterSize+10, this.cellSize, this.cellSize, this.cellRow, this.cellCol, this.mineRatio, timer);
+    this.timer.x = this.cellSize*this.cellCol-this.counterSize;
+    var field = new Field(0, this.counterSize+10, this.cellSize, this.cellSize, this.cellRow, this.cellCol, this.mineRatio, this.timer);
     field.reset();
     var mineCounter = new MineCounter(0, 0, this.counterSize, this.counterSize, field);
     var resetButton = new ResetButton(this.cellSize*this.cellCol/2-this.counterSize, 0, this.counterSize*2, this.counterSize, field);
 
     this.clickListenComponents = [field, resetButton];
     this.contextMenuListenComponents = [field];
-    this.renderComponents = [timer, field, mineCounter, resetButton];
+    this.renderComponents = [this.timer, field, mineCounter, resetButton];
 
     render();
   },
