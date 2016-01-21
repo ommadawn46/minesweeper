@@ -10,7 +10,7 @@ function MineSweeper(){
   this.counterSize = 70;
 
   this.easyButton = new DifficultyButton(0, 20, this.dbWidth, this.dbHeight, 9, 9, 10/81, 'Easy', this);
-  this.normalButton = new DifficultyButton(0, this.dbHeight+40, this.dbWidth, this.dbHeight, 16, 16, 40/256, 'Normal', this);
+  this.normalButton = new DifficultyButton(0, this.dbHeight+40, this.dbWidth, this.dbHeight, 16, 16, 40/256, 'Medium', this);
   this.hardButton = new DifficultyButton(0, this.dbHeight*2+60, this.dbWidth, this.dbHeight, 16, 30, 99/480, 'Hard', this);
 
   this.cellRow = this.cellCol = this.mineRatio = null;
