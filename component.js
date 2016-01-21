@@ -10,7 +10,7 @@ function MineSweeper(){
   this.counterSize = 70;
 
   this.easyButton = new DifficultyButton(0, 20, this.dbWidth, this.dbHeight, 9, 9, 10/81, 'Easy', this);
-  this.normalButton = new DifficultyButton(0, this.dbHeight+40, this.dbWidth, this.dbHeight, 16, 16, 40/256, 'Medium', this);
+  this.mediumButton = new DifficultyButton(0, this.dbHeight+40, this.dbWidth, this.dbHeight, 16, 16, 40/256, 'Medium', this);
   this.hardButton = new DifficultyButton(0, this.dbHeight*2+60, this.dbWidth, this.dbHeight, 16, 30, 99/480, 'Hard', this);
 
   this.cellRow = this.cellCol = this.mineRatio = null;
@@ -19,9 +19,9 @@ function MineSweeper(){
 MineSweeper.prototype = {
   reset: function(){
     setCanvasSize(this.defaultWidth, this.defaultHeight);
-    this.clickListenComponents = [this.easyButton, this.normalButton, this.hardButton];
+    this.clickListenComponents = [this.easyButton, this.mediumButton, this.hardButton];
     this.contextMenuListenComponents = [];
-    this.renderComponents = [this.easyButton, this.normalButton, this.hardButton];
+    this.renderComponents = [this.easyButton, this.mediumButton, this.hardButton];
 
     render();
   },
@@ -74,7 +74,7 @@ Field.prototype = {
     cell = this.getCellXY(x, y);
     if(!this.ended && cell && !cell.marked){
       if(!this.started){
-        this.start();
+        this.start(cell);
       }
       if(cell.isMine){
         this.mineBang();
@@ -89,7 +89,7 @@ Field.prototype = {
     cell = this.getCellXY(x, y);
     if(!this.ended && cell && !cell.uncovered){
       if(!this.started){
-        this.start();
+        this.start(cell);
       }
       cell.mark();
     }
@@ -170,15 +170,14 @@ Field.prototype = {
     }
     if(this.gameCleared){
       ctx.beginPath();
-      ctx.font = 'bold 100px Century Gothic';
+      ctx.font = 'bold 90px Century Gothic';
       ctx.shadowColor = "white";
       ctx.shadowOffsetX = ctx.shadowOffsetY = 5;
       ctx.shadowBlur = 5;
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.fillStyle = 'rgba(255, 255, 255, 1.00)';;
-      var x = this.x + (this.cellWidth*this.cellCol)/2, y = this.y + (this.cellHeight*this.cellRow)/2;
-      console.log(x, y);
+      var x = canvas.width/2, y = canvas.height/2;
       ctx.fillText('Clear!', x, y);
       ctx.shadowOffsetX = ctx.shadowOffsetY = 0;
       ctx.shadowBlur = 0;
@@ -186,7 +185,7 @@ Field.prototype = {
       ctx.strokeText('Clear!', x, y);
     }
   },
-  start : function(){
+  start : function(cell){
     this.setMines(cell);
     this.started = true;
     this.timer.start();
