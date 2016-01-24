@@ -4,8 +4,8 @@ var mineSweeper;
 window.onload = function(){
   canvas = document.getElementById('canvas');
   canvas.style.position = "absolute"
-  canvas.style.top = "50%";
-  canvas.style.left = "50%";
+  canvas.width = window.innerWidth*0.99;
+  canvas.height = window.innerHeight*0.98;
   ctx = canvas.getContext('2d');
   canvas.addEventListener('click', click, true);
   canvas.addEventListener('contextmenu', contextMenu, true);
@@ -15,18 +15,17 @@ window.onload = function(){
   mineSweeper.reset();
 }
 
+window.onresize = function(){
+  canvas.width = window.innerWidth*0.99;
+  canvas.height = window.innerHeight*0.98;
+  render();
+}
+
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   mineSweeper.renderComponents.forEach(function(component){
     component.draw(ctx);
   })
-}
-
-function setCanvasSize(width, height){
-  canvas.width = width;
-  canvas.height = height;
-  canvas.style.marginLeft = -(width < window.innerWidth ? width : window.innerWidth-10)/2;
-  canvas.style.marginTop = -(height < window.innerHeight ? height : window.innerHeight-10)/2;
 }
 
 function click(event){
@@ -43,7 +42,28 @@ function contextMenu(event){
 }
 
 function keyDown(event){
-  if(event.keyCode == 27){ // ESC
+  var keyCode = event.keyCode;
+  if(keyCode == 8){ // backspace
+    mineSweeper.undo();
+  }else if(keyCode == 27){ // ESC
     mineSweeper.reset();
+  }else if(keyCode == 65){ // A
+    mineSweeper.swithAutoSolverMode();
+  }else if(keyCode == 72){ // H
+    mineSweeper.swichHintMode();
+  }else if(keyCode == 83){ // S
+    mineSweeper.switchSolvableMode();
   }
+}
+
+
+/*
+  ユーティリティ関数
+*/
+Array.prototype.include = function(val){
+  var this_length = this.length;
+  for(i = 0; i < this_length; i++){
+    if(val === this[i]) return true;
+  }
+  return false;
 }
