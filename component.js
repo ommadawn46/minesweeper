@@ -19,8 +19,8 @@ function MineSweeper(){
                     16, 30, 99/480, 'Hard', this); // 0.20625
   this.veryHardButton = new DifficultyButton(buttonX, function(){return self.dbHeight()*4+dbMargin()*5}, this.dbWidth, this.dbHeight,
                     24, 48, 256/1152, 'Very Hard', this); // 0.22222
-  /* this.extremeButton = new DifficultyButton(buttonX, function(){return self.dbHeight()*4+dbMargin()*5}, this.dbWidth, this.dbHeight,
-                    32, 64, 512/2048, 'Extreme', this); // 0.25 */
+  this.extremeButton = new DifficultyButton(buttonX, function(){return self.dbHeight()*5+dbMargin()*6}, this.dbWidth, this.dbHeight,
+                    32, 64, 512/2048, 'Extreme', this); // 0.25
 
   this.field = null;
   this.timer = new Timer(null, function(){return 0}, null, this.counterHeight);
@@ -40,12 +40,12 @@ function MineSweeper(){
 }
 MineSweeper.prototype = {
   dbWidth: function(){return (canvas.width < canvas.height ? canvas.width : canvas.height) / 2},
-  dbHeight: function(){return (canvas.width < canvas.height ? canvas.width : canvas.height) / 7},
+  dbHeight: function(){return (canvas.width < canvas.height ? canvas.width : canvas.height) / 8.5},
   counterHeight: function(){return canvas.height / 12},
   reset: function(){
-    this.clickListenComponents = [this.easyButton, this.mediumButton, this.hardButton, this.veryHardButton];
+    this.clickListenComponents = [this.easyButton, this.mediumButton, this.hardButton, this.veryHardButton, this.extremeButton];
     this.contextMenuListenComponents = [];
-    this.renderComponents = [this.titleLabel, this.easyButton, this.mediumButton, this.hardButton, this.veryHardButton];
+    this.renderComponents = [this.titleLabel, this.easyButton, this.mediumButton, this.hardButton, this.veryHardButton, this.extremeButton];
     render();
   },
   gameSetup: function(){
@@ -97,6 +97,14 @@ MineSweeper.prototype = {
   undo: function(){
     if(this.field) this.field.undo();
   },
+  redo: function(){
+    if(this.field) this.field.redo();
+  },
+  draw: function(ctx){
+    this.renderComponents.forEach(function(component){
+      component.draw(ctx);
+    });
+  },
   swithAutoSolverMode: function(){
     this.autoSolverMode = !this.autoSolverMode;
     if(this.autoSolverMode) this.aModeLabel.fontColor = 'rgba(0, 255, 0, 1.0)';
@@ -126,19 +134,20 @@ function Field(x, y, cellWidth, cellHeight, cellRow, cellCol, mineRatio, timer, 
   this.cellRow = cellRow, this.cellCol = cellCol;
   this.mineRatio = mineRatio;
   this.cells = null;
-  this.settingMines = false;
   this.started = false;
   this.ended = false;
   this.gameCleared = false;
   this.timer = timer;
   this.mineSweeper = mineSweeper;
-  this.history = [];
-  this.uncoverStack = [];
+  this.undoList = [];
+  this.redoList = [];
+  this.autoSolveInterval = 30;
+  this.autoSolverController = new function(){this.running = false};
 }
 Field.prototype = {
   getMineNum: function(){return Math.floor(this.cellRow * this.cellCol * this.mineRatio)},
   getMarkNum: function(){return this.getFilterdCells(function(fc){return fc.marked}).length},
-  getMarkedMinesNum: function(){return this.getFilterdCells(function(fc){return fc.marked && fc.isMine}).length;},
+  getFoundMinesNum: function(){return this.getFilterdCells(function(fc){return fc.probability > 0.99}).length;},
   click : function(x, y){
     var startTime = Date.now();
     this.clickCell(this.getCellXY(x, y));
@@ -146,22 +155,21 @@ Field.prototype = {
     render();
   },
   clickCell : function(cell){
-    if(!this.ended && cell && !cell.marked && !cell.uncovered){
-      if(!this.started){
-        this.start(cell);
-      }
-      if(!this.settingMines) this.history.push(this.cloneCells());
-      if(cell.isMine){
-        this.mineBang();
-      }else if(!cell.uncovered){
-        this.uncoverCell(cell);
-        if(mineSweeper.autoSolverMode){
-          while(this.uncoverStack.length > 0){
-            this.clickCell(this.uncoverStack.pop());
-          }
+    if(!this.ended){
+      if(cell && !cell.marked && !cell.uncovered){
+        if(!this.started){
+          this.start(cell);
         }
+        this.undoList.push(this.cloneCells());
+        this.redoList = [];
+        if(cell.isMine){
+          this.mineBang();
+        }else if(!cell.uncovered){
+          this.uncoverCell(cell);
+        }
+        if(this.checkGameClear()) this.gameClear();
       }
-      if(this.checkGameClear()) this.gameClear();
+      if(mineSweeper.autoSolverMode) this.autoSolve();
     }
   },
   contextMenu : function(x, y){
@@ -173,20 +181,33 @@ Field.prototype = {
       if(!this.started){
         this.start(cell);
       }
-      if(!this.settingMines) this.history.push(this.cloneCells());
+      this.undoList.push(this.cloneCells());
+      this.redoList = [];
       cell.mark();
     }
   },
   undo : function(){
-    if(this.ended || this.gameCleared){
-      this.ended = this.gameCleared = false;
-      this.timer.resume();
+    if(this.undoList.length > 0){
+      if(this.ended || this.gameCleared){
+        this.ended = this.gameCleared = false;
+        this.timer.resume();
+      }
+      this.redoList.push(this.cloneCells());
+      this.cells = this.undoList.pop();
+      if(this.undoList.length <= 0) this.reset();
+      render();
+      }
+  },
+  redo : function(){
+    if(this.redoList.length > 0){
+      this.undoList.push(this.cloneCells());
+      this.cells = this.redoList.pop();
+      if(this.getFilterdCells(function(fc){return fc.isMine && fc.uncovered}).length > 0){
+        this.mineBang();
+      }
+      if(this.checkGameClear()) this.gameClear();
+      render();
     }
-    this.cells = this.history.pop();
-    if(this.history.length <= 0){
-      this.reset();
-    }
-    render();
   },
   reset : function(){
     var cells = [];
@@ -203,15 +224,17 @@ Field.prototype = {
     this.gameCleared = false;
     this.timer.stop();
     this.timer.time = 0;
-    this.history = [];
-    this.uncoverStack = [];
+    this.undoList = [];
+    this.redoList = [];
+    this.autoSolverController.running = false;
+    this.autoSolverController = new function(){this.running = false};
   },
   setMines : function(settableCells){
     settableCells.forEach(function(sc){
       sc.isMine = false;
     });
     var setted = 0;
-    var retainMinesNum = this.getMineNum()-this.getMarkedMinesNum();
+    var retainMinesNum = this.getMineNum()-this.getFoundMinesNum();
     while(setted < retainMinesNum){
       var cc = settableCells[Math.floor(Math.random() * settableCells.length)];
       if(!cc.isMine){
@@ -222,16 +245,17 @@ Field.prototype = {
     this.updateNeighborMinesNum();
   },
   setSolvableMines : function(orgCell){
-    this.settingMines = true;
+    var self = this;
     var orgRow = orgCell.row, orgCol = orgCell.col;
     orgCell.getNeighborCells().concat([orgCell]).forEach(function(nc){nc.uncovered = true;});
     var startCells = this.cloneCells();
     var noUncoverTimes = 0;
-    while(!(this.checkGameClear() || this.getMineNum() == this.getMarkNum())){
-      settableCells = this.getFilterdCells(function(fc){return !fc.uncovered && !fc.marked});
+    while(!(this.checkGameClear() || this.getMineNum() == this.getFoundMinesNum())){
+      settableCells = this.getFilterdCells(function(fc){return !fc.uncovered && fc.probability < 0.99});
       this.setMines(settableCells);
       this.updateMineProbability();
-      if(this.uncoverStack.length <= 0){
+      var safeCells = this.getFilterdCells(function(fc){return !fc.uncovered && fc.probability < 0.01});
+      if(safeCells.length <= 0){
         if(++noUncoverTimes > 10){
           this.cells = startCells;
           startCells = this.cloneCells();
@@ -240,8 +264,9 @@ Field.prototype = {
       }else{
         noUncoverTimes = 0;
       }
-      while(this.uncoverStack.length > 0){
-        this.uncoverCell(this.uncoverStack.pop());
+      while(safeCells.length > 0){
+        safeCells.forEach(function(ucc){self.uncoverCell(ucc)});
+        safeCells = this.getFilterdCells(function(fc){return !fc.uncovered && fc.probability < 0.01});
       }
     }
     for(row = 0; row < this.cellRow; row++){
@@ -253,7 +278,6 @@ Field.prototype = {
     }
     orgCell.uncovered = orgCell.marked = false;
     this.cells[orgRow][orgCol] = orgCell;
-    this.settingMines = false;
   },
   updateNeighborMinesNum : function(){
     for(row = 0; row < this.cellRow; row++){
@@ -267,20 +291,62 @@ Field.prototype = {
       }
     }
   },
+  autoSolve : function(){
+    this.autoSolverController.running = !this.autoSolverController.running;
+    if(this.autoSolverController.running){
+      var self = this;
+      var controller = this.autoSolverController;
+      var mineCells = this.getFilterdCells(function(fc){return !fc.marked && fc.probability > 0.99});
+      var safeCells = this.getFilterdCells(function(fc){return !fc.uncovered && fc.probability < 0.01});
+      var act = function(){
+        var updated = false;
+        if(!controller.running){
+          return;
+        }
+        if(mineCells.length > 0){
+          var cell = mineCells.pop();
+          while(cell && cell.marked) cell = mineCells.pop();
+          if(cell){
+            self.contextMenuCell(cell);
+            updated = true;
+          }
+        }else if(safeCells.length > 0){
+          var cell = safeCells.pop();
+          while(cell && cell.uncovered) cell = safeCells.pop();
+          if(cell){
+            self.uncoverCell(cell);
+            updated = true;
+          }
+        }
+        if(updated){
+          if(self.checkGameClear()) self.gameClear();
+          render();
+          if(controller.running) setTimeout(act, self.autoSolveInterval);
+        }else{
+          mineCells = self.getFilterdCells(function(fc){return !fc.marked && fc.probability > 0.99});
+          safeCells = self.getFilterdCells(function(fc){return !fc.uncovered && fc.probability < 0.01});
+          if(mineCells.length <= 0 && safeCells.length <= 0){
+            return;
+          }else{
+            setTimeout(act, 0);
+          }
+        }
+      };
+      setTimeout(act, this.autoSolveInterval);
+    }
+  },
   uncoverCell : function(cell){
     var stack = [];
     if(!cell.uncovered) stack.push(cell);
     while(stack.length > 0){
       var cc = stack.pop();
-      if(!cc.uncovered){
-        cc.uncover();
-        if(cc.neighborMines <= 0){
-          cc.getNeighborCells().forEach(function(nc){
-            if(!stack.include(nc)){
-              stack.push(nc);
-            }
-          });
-        }
+      cc.uncover();
+      if(cc.neighborMines <= 0){
+        cc.getNeighborCells().forEach(function(nc){
+          if(!nc.uncovered && !stack.include(nc)){
+            stack.push(nc);
+          }
+        });
       }
     }
     this.updateMineProbability();
@@ -293,6 +359,7 @@ Field.prototype = {
         stack.push(ucc);
       }
     });
+    var needOnce = false;
     var checkedCells = [];
     stack.forEach(function(cc){
       var mineNum = 0, noMineNum = 0, coveredCells = [];
@@ -310,24 +377,15 @@ Field.prototype = {
       });
       var probability = (cc.neighborMines-mineNum)/coveredCells.length;
       coveredCells.forEach(function(coveredCell){
-        if(probability < 0.01){
-          coveredCell.probability = 0.0;
-          self.updateMineProbability();
-          if(!self.uncoverStack.include(coveredCell)){
-            self.uncoverStack.push(coveredCell);
-          }
-        }else if(0.99 < probability){
-          coveredCell.probability = 1.0;
-          self.updateMineProbability();
-          if(!coveredCell.marked && (mineSweeper.autoSolverMode || self.settingMines)){
-            if(!self.settingMines) self.history.push(self.cloneCells());
-            coveredCell.mark();
-          }
-        }else if(0.01 < coveredCell.probability && coveredCell.probability < 0.99){
-          coveredCell.probability = coveredCell.probability*0.9 + probability*0.1;
+        if(probability < 0.01 || 0.99 < probability){
+          coveredCell.probability = probability;
+          needOnce = true;
+        }else{
+          coveredCell.probability = coveredCell.probability*0.7 + probability*0.3;
         }
       });
     });
+    if(needOnce) this.updateMineProbability();
   },
   draw : function(ctx){
     for(row = 0; row < this.cellRow; row++){
@@ -366,6 +424,7 @@ Field.prototype = {
   end : function(){
     this.ended = true;
     this.timer.stop();
+    this.autoSolverController.running = false;
   },
   getCellXY : function(x, y){
     for(row = 0; row < this.cellRow; row++){

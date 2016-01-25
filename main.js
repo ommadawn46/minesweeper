@@ -23,9 +23,7 @@ window.onresize = function(){
 
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  mineSweeper.renderComponents.forEach(function(component){
-    component.draw(ctx);
-  })
+  mineSweeper.draw(ctx);
 }
 
 function click(event){
@@ -43,10 +41,13 @@ function contextMenu(event){
 
 function keyDown(event){
   var keyCode = event.keyCode;
-  if(keyCode == 8){ // backspace
-    mineSweeper.undo();
-  }else if(keyCode == 27){ // ESC
+  if(keyCode == 27){ // ESC
+    event.preventDefault();
     mineSweeper.reset();
+  }else if(keyCode == 37){ // left
+    mineSweeper.undo();
+  }else if(keyCode == 39){ // right
+    mineSweeper.redo();
   }else if(keyCode == 65){ // A
     mineSweeper.swithAutoSolverMode();
   }else if(keyCode == 72){ // H
