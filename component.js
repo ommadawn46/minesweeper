@@ -3,27 +3,27 @@
 */
 function MineSweeper(){
   var self = this;
-  var dbMargin = function(){return self.dbHeight()/3};
+  var getDbMargin = function(){return self.getDbHeight()/3};
 
-  this.titleLabel = new Label(function(){return canvas.width/2-self.dbWidth()*1.375}, dbMargin,
-  function(){return self.dbWidth()*2.75}, this.dbHeight, function(){return "Logical Minesweeper"});
+  this.titleLabel = new Label(function(){return canvas.width/2-self.getDbWidth()*1.375}, getDbMargin,
+  function(){return self.getDbWidth()*2.75}, this.getDbHeight, function(){return "Logical Minesweeper"});
   this.titleLabel.fontStyle = 'italic';
   this.titleLabel.fontColor = 'rgba(0, 0, 0, 1)';
 
-  var buttonX = function(){return canvas.width/2-self.dbWidth()/2};
-  this.easyButton = new DifficultyButton(buttonX, function(){return self.dbHeight()+dbMargin()*2}, this.dbWidth, this.dbHeight,
+  var getButtonX = function(){return canvas.width/2-self.getDbWidth()/2};
+  this.easyButton = new DifficultyButton(getButtonX, function(){return self.getDbHeight()+getDbMargin()*2}, this.getDbWidth, this.getDbHeight,
                     9, 9, 10/81, 'Easy', this); // 0.12345679
-  this.mediumButton = new DifficultyButton(buttonX, function(){return self.dbHeight()*2+dbMargin()*3}, this.dbWidth, this.dbHeight,
+  this.mediumButton = new DifficultyButton(getButtonX, function(){return self.getDbHeight()*2+getDbMargin()*3}, this.getDbWidth, this.getDbHeight,
                     16, 16, 40/256, 'Medium', this); // 0.15625
-  this.hardButton = new DifficultyButton(buttonX, function(){return self.dbHeight()*3+dbMargin()*4}, this.dbWidth, this.dbHeight,
+  this.hardButton = new DifficultyButton(getButtonX, function(){return self.getDbHeight()*3+getDbMargin()*4}, this.getDbWidth, this.getDbHeight,
                     16, 30, 99/480, 'Hard', this); // 0.20625
-  this.veryHardButton = new DifficultyButton(buttonX, function(){return self.dbHeight()*4+dbMargin()*5}, this.dbWidth, this.dbHeight,
+  this.veryHardButton = new DifficultyButton(getButtonX, function(){return self.getDbHeight()*4+getDbMargin()*5}, this.getDbWidth, this.getDbHeight,
                     24, 48, 256/1152, 'Very Hard', this); // 0.22222
-  this.extremeButton = new DifficultyButton(buttonX, function(){return self.dbHeight()*5+dbMargin()*6}, this.dbWidth, this.dbHeight,
+  this.extremeButton = new DifficultyButton(getButtonX, function(){return self.getDbHeight()*5+getDbMargin()*6}, this.getDbWidth, this.getDbHeight,
                     32, 64, 512/2048, 'Extreme', this); // 0.25
 
   this.field = null;
-  this.timer = new Timer(null, function(){return 0}, null, this.counterHeight);
+  this.timer = new Timer(null, function(){return 0}, null, this.getCounterHeight);
   this.aModeLabel = new Label(null, null, null, function(){return 0}, function(){return "A"});
   this.hModeLabel = new Label(null, null, null, function(){return 0}, function(){return "H"});
   this.sModeLabel = new Label(null, null, null, function(){return 0}, function(){return "S"});
@@ -39,9 +39,9 @@ function MineSweeper(){
   this.clickListenComponents = this.contextMenuListenComponents = this.renderComponents = null;
 }
 MineSweeper.prototype = {
-  dbWidth: function(){return (canvas.width < canvas.height ? canvas.width : canvas.height) / 2},
-  dbHeight: function(){return (canvas.width < canvas.height ? canvas.width : canvas.height) / 8.5},
-  counterHeight: function(){return canvas.height / 12},
+  getDbWidth: function(){return (canvas.width < canvas.height ? canvas.width : canvas.height) / 2},
+  getDbHeight: function(){return (canvas.width < canvas.height ? canvas.width : canvas.height) / 8.5},
+  getCounterHeight: function(){return canvas.height / 12},
   reset: function(){
     this.clickListenComponents = [this.easyButton, this.mediumButton, this.hardButton, this.veryHardButton, this.extremeButton];
     this.contextMenuListenComponents = [];
@@ -50,33 +50,33 @@ MineSweeper.prototype = {
   },
   gameSetup: function(){
     var self = this;
-    var cellSize = function(row, col){
+    var getCellSize = function(row, col){
       var w = canvas.width/col;
-      var h = (canvas.height-self.counterHeight()*1.1)/row;
+      var h = (canvas.height-self.getCounterHeight()*1.1)/row;
       return w < h ? w : h;
     };
-    var counterWidth = function(){return cellSize(9, 9)*2};
-    var fieldCellSize = function(){return cellSize(self.cellRow, self.cellCol)}
-    var fieldWidth = function(){return fieldCellSize()*self.cellCol};
-    var fieldHeight = function(){return fieldCellSize()*self.cellRow};
+    var getCounterWidth = function(){return getCellSize(9, 9)*2};
+    var getFieldCellSize = function(){return getCellSize(self.cellRow, self.cellCol)}
+    var getFieldWidth = function(){return getFieldCellSize()*self.cellCol};
+    var getFieldHeight = function(){return getFieldCellSize()*self.cellRow};
 
-    this.timer.x = function(){return canvas.width/2+fieldWidth()/2-counterWidth()};
-    this.timer.width = counterWidth;
-    var fieldX = function(){return canvas.width/2-fieldWidth()/2};
-    var fieldY = function(){var h = self.counterHeight(); return h + h/10};
-    this.field = new Field(fieldX, fieldY, fieldCellSize, fieldCellSize,
+    this.timer.getX = function(){return canvas.width/2+getFieldWidth()/2-getCounterWidth()};
+    this.timer.getWidth = getCounterWidth;
+    var getFieldX = function(){return canvas.width/2-getFieldWidth()/2};
+    var getFieldY = function(){var h = self.getCounterHeight(); return h + h/10};
+    this.field = new Field(getFieldX, getFieldY, getFieldCellSize, getFieldCellSize,
       this.cellRow, this.cellCol, this.mineRatio, this.timer, this);
     this.field.reset();
 
-    var mineCounter = new MineCounter(fieldX, function(){return 0}, counterWidth, this.counterHeight, this.field);
-    var resetButton = new ResetButton(function(){return canvas.width/2-counterWidth()}, function(){return 0},
-    function(){return counterWidth()*2}, this.counterHeight, this.field);
+    var mineCounter = new MineCounter(getFieldX, function(){return 0}, getCounterWidth, this.getCounterHeight, this.field);
+    var resetButton = new ResetButton(function(){return canvas.width/2-getCounterWidth()}, function(){return 0},
+    function(){return getCounterWidth()*2}, this.getCounterHeight, this.field);
 
-    this.aModeLabel.x = this.hModeLabel.x = this.sModeLabel.x = function(){return fieldX()-counterWidth()/5};
-    this.aModeLabel.y = function(){return fieldHeight()/50};
-    this.hModeLabel.y = function(){return fieldHeight()*3.5/50};
-    this.sModeLabel.y = function(){return fieldHeight()*6/50};
-    this.aModeLabel.width = this.hModeLabel.width = this.sModeLabel.width = function(){return counterWidth()/10};
+    this.aModeLabel.getX = this.hModeLabel.getX = this.sModeLabel.getX = function(){return getFieldX()-getCounterWidth()/5};
+    this.aModeLabel.getY = function(){return getFieldHeight()/50};
+    this.hModeLabel.getY = function(){return getFieldHeight()*3.5/50};
+    this.sModeLabel.getY = function(){return getFieldHeight()*6/50};
+    this.aModeLabel.getWidth = this.hModeLabel.getWidth = this.sModeLabel.getWidth = function(){return getCounterWidth()/10};
 
     this.clickListenComponents = [this.field, resetButton];
     this.contextMenuListenComponents = [this.field];
@@ -128,9 +128,9 @@ MineSweeper.prototype = {
 /*
   フィールド
 */
-function Field(x, y, cellWidth, cellHeight, cellRow, cellCol, mineRatio, timer, mineSweeper){
-  this.x = x, this.y = y;
-  this.cellWidth = cellWidth, this.cellHeight = cellHeight;
+function Field(getX, getY, getCellWidth, getCellHeight, cellRow, cellCol, mineRatio, timer, mineSweeper){
+  this.getX = getX, this.getY = getY;
+  this.getCellWidth = getCellWidth, this.getCellHeight = getCellHeight;
   this.cellRow = cellRow, this.cellCol = cellCol;
   this.mineRatio = mineRatio;
   this.cells = null;
@@ -141,7 +141,7 @@ function Field(x, y, cellWidth, cellHeight, cellRow, cellCol, mineRatio, timer, 
   this.mineSweeper = mineSweeper;
   this.undoList = [];
   this.redoList = [];
-  this.autoSolveInterval = 30;
+  this.autoSolveInterval = 25;
   this.autoSolverController = new function(){this.running = false};
 }
 Field.prototype = {
@@ -229,6 +229,30 @@ Field.prototype = {
     this.autoSolverController.running = false;
     this.autoSolverController = new function(){this.running = false};
   },
+  draw : function(ctx){
+    for(row = 0; row < this.cellRow; row++){
+      for(col = 0; col < this.cellCol; col++){
+        this.cells[row][col].draw(ctx);
+      }
+    }
+    if(this.gameCleared){
+      var x = canvas.width/2, y = canvas.height/2;
+      var width = this.getCellWidth()*this.cellCol, height = this.getCellHeight()*this.cellRow;
+      ctx.beginPath();
+      ctx.font = 'bold '+String(Math.floor(width*0.25))+'px Century Gothic';
+      ctx.shadowColor = "white";
+      ctx.shadowOffsetX = ctx.shadowOffsetY = 5;
+      ctx.shadowBlur = 5;
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillStyle = 'rgba(255, 255, 255, 1.00)';
+      ctx.fillText('Clear!', x, y);
+      ctx.shadowOffsetX = ctx.shadowOffsetY = 0;
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(0, 0, 0, 1.00)';;
+      ctx.strokeText('Clear!', x, y);
+    }
+  },
   setMines : function(settableCells){
     settableCells.forEach(function(sc){
       sc.isMine = false;
@@ -272,7 +296,7 @@ Field.prototype = {
     for(row = 0; row < this.cellRow; row++){
       for(col = 0; col < this.cellCol; col++){
         var cell = this.cells[row][col];
-        cell.uncovered = cell.marked = false;
+        cell.uncovered = cell.certainNeighbor = false;
         cell.probability = this.mineRatio;
       }
     }
@@ -293,7 +317,7 @@ Field.prototype = {
   },
   autoSolve : function(){
     this.autoSolverController.running = !this.autoSolverController.running;
-    if(this.autoSolverController.running){
+    if(this.autoSolverController.running && !this.ended){
       var self = this;
       var controller = this.autoSolverController;
       var mineCells = this.getFilterdCells(function(fc){return !fc.marked && fc.probability > 0.99});
@@ -307,13 +331,17 @@ Field.prototype = {
           var cell = mineCells.pop();
           while(cell && cell.marked) cell = mineCells.pop();
           if(cell){
-            self.contextMenuCell(cell);
+            self.undoList.push(self.cloneCells());
+            self.redoList = [];
+            cell.mark();
             updated = true;
           }
         }else if(safeCells.length > 0){
           var cell = safeCells.pop();
           while(cell && cell.uncovered) cell = safeCells.pop();
           if(cell){
+            self.undoList.push(self.cloneCells());
+            self.redoList = [];
             self.uncoverCell(cell);
             updated = true;
           }
@@ -325,10 +353,16 @@ Field.prototype = {
         }else{
           mineCells = self.getFilterdCells(function(fc){return !fc.marked && fc.probability > 0.99});
           safeCells = self.getFilterdCells(function(fc){return !fc.uncovered && fc.probability < 0.01});
-          if(mineCells.length <= 0 && safeCells.length <= 0){
-            return;
-          }else{
+          if(mineCells.length > 0 || safeCells.length > 0){
             setTimeout(act, 0);
+          }else{
+            if(self.getMineNum() == self.getFoundMinesNum()){
+              safeCells = self.getFilterdCells(function(fc){return !fc.uncovered && fc.probability < 0.99});
+              setTimeout(act, 0);
+            }else{
+              controller.running = false;
+              return;
+            }
           }
         }
       };
@@ -353,31 +387,25 @@ Field.prototype = {
   },
   updateMineProbability : function(){
     var self = this;
-    var stack = [];
-    this.getFilterdCells(function(fc){return fc.uncovered}).forEach(function(ucc){
-      if(ucc.neighborMines > 0 && !stack.include(ucc)){
-        stack.push(ucc);
-      }
+    var stack = this.getFilterdCells(function(fc){
+      return fc.uncovered && fc.neighborMines > 0 && !fc.certainNeighbor;
     });
     var needOnce = false;
-    var checkedCells = [];
     stack.forEach(function(cc){
       var mineNum = 0, noMineNum = 0, coveredCells = [];
       cc.getNeighborCells().forEach(function(nc){
-        if(nc.probability > 0.99){
-          mineNum++;
-        }else if(nc.probability > 0.01){
-          if(!checkedCells.include(nc)){
-            checkedCells.push(nc);
-          }
-          if(!nc.uncovered){
+        if(!nc.uncovered){
+          if(nc.probability > 0.99){
+            mineNum++;
+          }else if(nc.probability > 0.01){
             coveredCells.push(nc);
           }
         }
       });
       var probability = (cc.neighborMines-mineNum)/coveredCells.length;
+      if(probability < 0.01 || 0.99 < probability) cc.certainNeighbor = true;
       coveredCells.forEach(function(coveredCell){
-        if(probability < 0.01 || 0.99 < probability){
+        if(cc.certainNeighbor){
           coveredCell.probability = probability;
           needOnce = true;
         }else{
@@ -387,51 +415,12 @@ Field.prototype = {
     });
     if(needOnce) this.updateMineProbability();
   },
-  draw : function(ctx){
-    for(row = 0; row < this.cellRow; row++){
-      for(col = 0; col < this.cellCol; col++){
-        this.cells[row][col].draw(ctx);
-      }
-    }
-    if(this.gameCleared){
-      var x = canvas.width/2, y = canvas.height/2;
-      var width = this.cellWidth()*this.cellCol, height = this.cellHeight()*this.cellRow;
-      ctx.beginPath();
-      ctx.font = 'bold '+String(Math.floor(width*0.25))+'px Century Gothic';
-      ctx.shadowColor = "white";
-      ctx.shadowOffsetX = ctx.shadowOffsetY = 5;
-      ctx.shadowBlur = 5;
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.fillStyle = 'rgba(255, 255, 255, 1.00)';
-      ctx.fillText('Clear!', x, y);
-      ctx.shadowOffsetX = ctx.shadowOffsetY = 0;
-      ctx.shadowBlur = 0;
-      ctx.strokeStyle = 'rgba(0, 0, 0, 1.00)';;
-      ctx.strokeText('Clear!', x, y);
-    }
-  },
-  start : function(cell){
-    if(mineSweeper.solvableMode){
-      this.setSolvableMines(cell);
-    }else{
-      var noMinesCells = cell.getNeighborCells().concat([cell]);
-      this.setMines(this.getFilterdCells(function(fc){return !noMinesCells.include(fc)}));
-    }
-    this.started = true;
-    this.timer.start();
-  },
-  end : function(){
-    this.ended = true;
-    this.timer.stop();
-    this.autoSolverController.running = false;
-  },
   getCellXY : function(x, y){
     for(row = 0; row < this.cellRow; row++){
       for(col = 0; col < this.cellCol; col++){
         var cell = this.cells[row][col];
-        if(cell.x() < x && x < cell.x() + this.cellWidth()){
-          if(cell.y() < y && y < cell.y() + this.cellHeight()){
+        if(cell.getX() < x && x < cell.getX() + this.getCellWidth()){
+          if(cell.getY() < y && y < cell.getY() + this.getCellHeight()){
             return cell;
           }
         }
@@ -479,6 +468,21 @@ Field.prototype = {
       mc.uncovered = true;
     });
     this.end();
+  },
+  start : function(cell){
+    if(mineSweeper.solvableMode){
+      this.setSolvableMines(cell);
+    }else{
+      var noMinesCells = cell.getNeighborCells().concat([cell]);
+      this.setMines(this.getFilterdCells(function(fc){return !noMinesCells.include(fc)}));
+    }
+    this.started = true;
+    this.timer.start();
+  },
+  end : function(){
+    this.ended = true;
+    this.timer.stop();
+    this.autoSolverController.running = false;
   }
 }
 
@@ -493,14 +497,15 @@ function Cell(field, row, col){
   this.isMine = false;
   this.neighborMines = 0;
   this.probability = this.field.mineRatio;
+  this.certainNeighbor = false;
 }
 Cell.prototype = {
-  margin: function(){return (this.field.cellWidth() < this.field.cellHeight() ?
-    this.field.cellHeight() : this.field.cellWidth())/10},
-  width: function(){return this.field.cellWidth()-this.margin()},
-  height: function(){return this.field.cellHeight()-this.margin()},
-  x: function(){return this.field.x()+this.col*(this.width()+this.margin())+this.margin()/2},
-  y: function(){return this.field.y()+this.row*(this.height()+this.margin())+this.margin()/2},
+  getMargin: function(){return (this.field.getCellWidth() < this.field.getCellHeight() ?
+    this.field.getCellHeight() : this.field.getCellWidth())/10},
+  getWidth: function(){return this.field.getCellWidth()-this.getMargin()},
+  getHeight: function(){return this.field.getCellHeight()-this.getMargin()},
+  getX: function(){return this.field.getX()+this.col*(this.getWidth()+this.getMargin())+this.getMargin()/2},
+  getY: function(){return this.field.getY()+this.row*(this.getHeight()+this.getMargin())+this.getMargin()/2},
   uncover: function(){
     if(!this.uncovered){
       this.uncovered = true;
@@ -510,7 +515,7 @@ Cell.prototype = {
     this.marked = !this.marked;
   },
   draw: function(ctx){
-    var x = this.x(), y = this.y(), width = this.width(), height = this.height();
+    var x = this.getX(), y = this.getY(), width = this.getWidth(), height = this.getHeight();
     ctx.beginPath();
     if(this.uncovered){
       if(this.isMine){
@@ -574,10 +579,10 @@ Cell.prototype = {
 /*
   ラベル
 */
-function Label(x, y, width, height, text){
-  this.x = x, this.y = y;
-  this.width = width, this.height = height;
-  this.text = text;
+function Label(getX, getY, getWidth, getHeight, getText){
+  this.getX = getX, this.getY = getY;
+  this.getWidth = getWidth, this.getHeight = getHeight;
+  this.getText = getText;
   this.textSize = 0.07;
   this.fontFamily = 'Century Gothic';
   this.fontStyle = '';
@@ -586,7 +591,7 @@ function Label(x, y, width, height, text){
 }
 Label.prototype = {
   draw: function(ctx){
-    var x = this.x(), y = this.y(), width = this.width(), height = this.height();
+    var x = this.getX(), y = this.getY(), width = this.getWidth(), height = this.getHeight();
     ctx.beginPath();
     ctx.fillStyle = this.bgColor;
     ctx.rect(x, y, width, height);
@@ -597,15 +602,15 @@ Label.prototype = {
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillStyle = this.fontColor;
-    ctx.fillText(this.text(), x+width/2, y+height/2);
+    ctx.fillText(this.getText(), x+width/2, y+height/2);
   }
 }
 
 /*
   地雷カウンター
 */
-function MineCounter(x, y, width, height, field){
-  Label.call(this, x, y, width, height, function(){return String(this.field.getMineNum()-this.field.getMarkNum())});
+function MineCounter(getX, getY, getWidth, getHeight, field){
+  Label.call(this, getX, getY, getWidth, getHeight, function(){return String(this.field.getMineNum()-this.field.getMarkNum())});
   this.bgColor = 'rgba(0, 0, 100, 0.75)';
   this.textSize = 0.35;
   this.field = field;
@@ -615,8 +620,8 @@ MineCounter.prototype = Object.create(Label.prototype);
 /*
   タイマー
 */
-function Timer(x, y, width, height){
-  Label.call(this, x, y, width, height, function(){return String(this.time)});
+function Timer(getX, getY, getWidth, getHeight){
+  Label.call(this, getX, getY, getWidth, getHeight, function(){return String(this.time)});
   this.bgColor = 'rgba(0, 0, 100, 0.75)';
   this.textSize = 0.35;
   this.timer = null;
@@ -644,14 +649,14 @@ Timer.prototype = Object.create(Label.prototype, {
 /*
   ボタン
 */
-function Button(x, y, width, height, text, action){
-  Label.call(this, x, y, width, height, text);
+function Button(getX, getY, getWidth, getHeight, getText, action){
+  Label.call(this, getX, getY, getWidth, getHeight, getText);
   this.action = action;
 }
 Button.prototype = Object.create(Label.prototype, {
   click: {configurable: true, value: function(x, y){
-    if(this.x() < x && x < this.x() + this.width()){
-      if(this.y() < y && y < this.y() + this.height()){
+    if(this.getX() < x && x < this.getX() + this.getWidth()){
+      if(this.getY() < y && y < this.getY() + this.getHeight()){
         this.action();
       }
     }
@@ -661,8 +666,8 @@ Button.prototype = Object.create(Label.prototype, {
 /*
   リセットボタン
 */
-function ResetButton(x, y, width, height, field){
-  Button.call(this, x, y, width, height, function(){return "Reset"}, function(){field.reset(); render()});
+function ResetButton(getX, getY, getWidth, getHeight, field){
+  Button.call(this, getX, getY, getWidth, getHeight, function(){return "Reset"}, function(){field.reset(); render()});
   this.bgColor = 'rgba(20, 40, 80, 0.75)';
   this.textSize = 0.2;
   this.field = field;
@@ -672,8 +677,8 @@ ResetButton.prototype = Object.create(Button.prototype);
 /*
   難易度ボタン
 */
-function DifficultyButton(x, y, width, height, cellRow, cellCol, mineRatio, text, mineSweeper){
-  Button.call(this, x, y, width, height, function(){return text}, function(){
+function DifficultyButton(getX, getY, getWidth, getHeight, cellRow, cellCol, mineRatio, text, mineSweeper){
+  Button.call(this, getX, getY, getWidth, getHeight, function(){return text}, function(){
     mineSweeper.cellRow = cellRow;
     mineSweeper.cellCol = cellCol;
     mineSweeper.mineRatio = mineRatio;

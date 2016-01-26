@@ -57,7 +57,6 @@ function keyDown(event){
   }
 }
 
-
 /*
   ユーティリティ関数
 */
