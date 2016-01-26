@@ -1,3 +1,6 @@
+/*
+  メイン関数
+*/
 var canvas, ctx;
 var mineSweeper;
 
@@ -15,12 +18,14 @@ window.onload = function(){
   mineSweeper.reset();
 }
 
+// 画面の大きさが変更された時
 window.onresize = function(){
   canvas.width = window.innerWidth*0.99;
   canvas.height = window.innerHeight*0.98;
   render();
 }
 
+// 描画
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   mineSweeper.draw(ctx);
@@ -60,6 +65,7 @@ function keyDown(event){
 /*
   ユーティリティ関数
 */
+// 引数の要素がこの配列に含まれるかをbool型として返す
 Array.prototype.include = function(val){
   var this_length = this.length;
   for(i = 0; i < this_length; i++){

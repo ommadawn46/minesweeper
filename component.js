@@ -1,5 +1,5 @@
 /*
-  マインスイーパー
+  マインスイーパークラス
 */
 function MineSweeper(){
   var self = this;
@@ -39,15 +39,19 @@ function MineSweeper(){
   this.clickListenComponents = this.contextMenuListenComponents = this.renderComponents = null;
 }
 MineSweeper.prototype = {
+  // 難易度選択ボタンの幅・高さを返す
   getDbWidth: function(){return (canvas.width < canvas.height ? canvas.width : canvas.height) / 2},
   getDbHeight: function(){return (canvas.width < canvas.height ? canvas.width : canvas.height) / 8.5},
+  // カウンターラベルの高さを返す
   getCounterHeight: function(){return canvas.height / 12},
+  // 難易度選択画面へ戻る
   reset: function(){
     this.clickListenComponents = [this.easyButton, this.mediumButton, this.hardButton, this.veryHardButton, this.extremeButton];
     this.contextMenuListenComponents = [];
     this.renderComponents = [this.titleLabel, this.easyButton, this.mediumButton, this.hardButton, this.veryHardButton, this.extremeButton];
     render();
   },
+  // ゲームをセットアップする
   gameSetup: function(){
     var self = this;
     var getCellSize = function(row, col){
@@ -84,39 +88,47 @@ MineSweeper.prototype = {
 
     render();
   },
+  // 左クリック
   click: function(x, y){
     this.clickListenComponents.forEach(function(component){
       component.click(x, y);
     })
   },
+  // 右クリック
   contextMenu: function(x, y){
     this.contextMenuListenComponents.forEach(function(component){
       component.contextMenu(x, y);
     })
   },
+  // 取り消し
   undo: function(){
     if(this.field) this.field.undo();
   },
+  // やり直し
   redo: function(){
     if(this.field) this.field.redo();
   },
+  // 描画
   draw: function(ctx){
     this.renderComponents.forEach(function(component){
       component.draw(ctx);
     });
   },
+  // オートソルバーの切り換え
   swithAutoSolverMode: function(){
     this.autoSolverMode = !this.autoSolverMode;
     if(this.autoSolverMode) this.aModeLabel.fontColor = 'rgba(0, 255, 0, 1.0)';
     else this.aModeLabel.fontColor = 'rgba(0, 0, 0, 0.5)';
     render();
   },
+  // ヒント表示の切り換え
   swichHintMode: function(){
     this.hintMode = !this.hintMode;
     if(this.hintMode) this.hModeLabel.fontColor = 'rgba(0, 255, 0, 1.0)';
     else this.hModeLabel.fontColor = 'rgba(0, 0, 0, 0.5)';
     render();
   },
+  // 論理的盤面作成モードの切り換え
   switchSolvableMode: function(){
     this.solvableMode = !this.solvableMode;
     if(this.solvableMode) this.sModeLabel.fontColor = 'rgba(0, 255, 0, 1.0)';
@@ -126,7 +138,7 @@ MineSweeper.prototype = {
 }
 
 /*
-  フィールド
+  フィールドクラス
 */
 function Field(getX, getY, getCellWidth, getCellHeight, cellRow, cellCol, mineRatio, timer, mineSweeper){
   this.getX = getX, this.getY = getY;
@@ -145,15 +157,20 @@ function Field(getX, getY, getCellWidth, getCellHeight, cellRow, cellCol, mineRa
   this.autoSolverController = new function(){this.running = false};
 }
 Field.prototype = {
+  // 盤面に存在できる地雷の数を返す
   getMineNum: function(){return Math.floor(this.cellRow * this.cellCol * this.mineRatio)},
+  // マークしたセルの数を返す
   getMarkNum: function(){return this.getFilterdCells(function(fc){return fc.marked}).length},
+  // 地雷であることが確定したセルの数を返す
   getFoundMinesNum: function(){return this.getFilterdCells(function(fc){return fc.probability > 0.99}).length;},
+  // 左クリック
   click : function(x, y){
     var startTime = Date.now();
     this.clickCell(this.getCellXY(x, y));
     console.log(Date.now()-startTime);
     render();
   },
+  // 左クリック時のセルへのアクション
   clickCell : function(cell){
     if(!this.ended){
       if(cell && !cell.marked && !cell.uncovered){
@@ -172,10 +189,12 @@ Field.prototype = {
       if(mineSweeper.autoSolverMode) this.autoSolve();
     }
   },
+  // 右クリック
   contextMenu : function(x, y){
     this.contextMenuCell(this.getCellXY(x, y));
     render();
   },
+  // 右クリック時のセルへのアクション
   contextMenuCell : function(cell){
     if(!this.ended && cell && !cell.uncovered){
       if(!this.started){
@@ -186,6 +205,7 @@ Field.prototype = {
       cell.mark();
     }
   },
+  // 行動を一回取り消す
   undo : function(){
     if(this.undoList.length > 0){
       if(this.ended || this.gameCleared){
@@ -198,6 +218,7 @@ Field.prototype = {
       render();
       }
   },
+  // 行動を一回やり直す
   redo : function(){
     if(this.redoList.length > 0){
       this.undoList.push(this.cloneCells());
@@ -209,6 +230,7 @@ Field.prototype = {
       render();
     }
   },
+  // ゲームをリセットする
   reset : function(){
     var cells = [];
     for(row = 0; row < this.cellRow; row++){
@@ -229,6 +251,7 @@ Field.prototype = {
     this.autoSolverController.running = false;
     this.autoSolverController = new function(){this.running = false};
   },
+  // 描画
   draw : function(ctx){
     for(row = 0; row < this.cellRow; row++){
       for(col = 0; col < this.cellCol; col++){
@@ -253,6 +276,7 @@ Field.prototype = {
       ctx.strokeText('Clear!', x, y);
     }
   },
+  // 引数のセル配列へ配置できるだけ地雷を配置する
   setMines : function(settableCells){
     settableCells.forEach(function(sc){
       sc.isMine = false;
@@ -268,6 +292,7 @@ Field.prototype = {
     }
     this.updateNeighborMinesNum();
   },
+  // 論理的に解ける盤面を作成する
   setSolvableMines : function(orgCell){
     var self = this;
     var orgRow = orgCell.row, orgCol = orgCell.col;
@@ -303,6 +328,7 @@ Field.prototype = {
     orgCell.uncovered = orgCell.marked = false;
     this.cells[orgRow][orgCol] = orgCell;
   },
+  // 全てのセルの数字を更新する
   updateNeighborMinesNum : function(){
     for(row = 0; row < this.cellRow; row++){
       for(col = 0; col < this.cellCol; col++){
@@ -315,16 +341,18 @@ Field.prototype = {
       }
     }
   },
+  // オートソルバーの起動/終了
   autoSolve : function(){
     this.autoSolverController.running = !this.autoSolverController.running;
-    if(this.autoSolverController.running && !this.ended){
+    if(this.autoSolverController.running){
       var self = this;
       var controller = this.autoSolverController;
       var mineCells = this.getFilterdCells(function(fc){return !fc.marked && fc.probability > 0.99});
       var safeCells = this.getFilterdCells(function(fc){return !fc.uncovered && fc.probability < 0.01});
       var act = function(){
         var updated = false;
-        if(!controller.running){
+        if(!controller.running || self.ended){
+          controller.running = false;
           return;
         }
         if(mineCells.length > 0){
@@ -369,6 +397,7 @@ Field.prototype = {
       setTimeout(act, this.autoSolveInterval);
     }
   },
+  // 引数のセルを開く
   uncoverCell : function(cell){
     var stack = [];
     if(!cell.uncovered) stack.push(cell);
@@ -385,6 +414,7 @@ Field.prototype = {
     }
     this.updateMineProbability();
   },
+  // 全てのセルの地雷率を更新する
   updateMineProbability : function(){
     var self = this;
     var stack = this.getFilterdCells(function(fc){
@@ -415,6 +445,7 @@ Field.prototype = {
     });
     if(needOnce) this.updateMineProbability();
   },
+  // 引数の座標に存在するセルを返す
   getCellXY : function(x, y){
     for(row = 0; row < this.cellRow; row++){
       for(col = 0; col < this.cellCol; col++){
@@ -428,6 +459,7 @@ Field.prototype = {
     }
     return null;
   },
+  // 引数の関数がtrueを返すセルを配列に入れて返す
   getFilterdCells: function(filter){
     var cells = [];
     for(row = 0; row < this.cellRow; row++){
@@ -437,6 +469,7 @@ Field.prototype = {
     }
     return cells;
   },
+  // 盤面上のセルを全て複製し2次元配列に入れて返す
   cloneCells: function(){
     var cells = [];
     for(row = 0; row < this.cellRow; row++){
@@ -448,6 +481,7 @@ Field.prototype = {
     }
     return cells;
   },
+  // ゲームクリア条件を満たしているかをbool型として返す
   checkGameClear : function(){
     for(row = 0; row < this.cellRow; row++){
       for(col = 0; col < this.cellCol; col++){
@@ -459,16 +493,19 @@ Field.prototype = {
     }
     return true;
   },
+  // ゲームをクリア状態にし終了する
   gameClear: function(){
     this.gameCleared = true;
     this.end();
   },
+  // 爆弾を全て開いてゲームを終了する
   mineBang : function(){
     this.getFilterdCells(function(fc){return fc.isMine}).forEach(function(mc){
       mc.uncovered = true;
     });
     this.end();
   },
+  // ゲームを開始する
   start : function(cell){
     if(mineSweeper.solvableMode){
       this.setSolvableMines(cell);
@@ -479,6 +516,7 @@ Field.prototype = {
     this.started = true;
     this.timer.start();
   },
+  // ゲームを終了する
   end : function(){
     this.ended = true;
     this.timer.stop();
@@ -487,7 +525,7 @@ Field.prototype = {
 }
 
 /*
-  セル
+  セルクラス
 */
 function Cell(field, row, col){
   this.field = field;
@@ -500,20 +538,25 @@ function Cell(field, row, col){
   this.certainNeighbor = false;
 }
 Cell.prototype = {
+  // セル間の隙間の大きさを返す
   getMargin: function(){return (this.field.getCellWidth() < this.field.getCellHeight() ?
     this.field.getCellHeight() : this.field.getCellWidth())/10},
+  // このセルの幅・高さ・座標を返す
   getWidth: function(){return this.field.getCellWidth()-this.getMargin()},
   getHeight: function(){return this.field.getCellHeight()-this.getMargin()},
   getX: function(){return this.field.getX()+this.col*(this.getWidth()+this.getMargin())+this.getMargin()/2},
   getY: function(){return this.field.getY()+this.row*(this.getHeight()+this.getMargin())+this.getMargin()/2},
+  // このセルを開く
   uncover: function(){
     if(!this.uncovered){
       this.uncovered = true;
     }
   },
+  // このセルのマーク状態を切り換える
   mark: function(){
     this.marked = !this.marked;
   },
+  // 描画
   draw: function(ctx){
     var x = this.getX(), y = this.getY(), width = this.getWidth(), height = this.getHeight();
     ctx.beginPath();
@@ -555,6 +598,7 @@ Cell.prototype = {
       ctx.fillText(String(this.neighborMines), x+width/2, y+height/2);
     }
   },
+  // このセルの周囲1マスに存在するセルを配列に入れて返す
   getNeighborCells: function(){
     var row = this.row, col = this.col;
     var cells = [], field = this.field;
@@ -567,6 +611,7 @@ Cell.prototype = {
     }
     return cells;
   },
+  // このセルのインスタンスを複製して返す
   clone: function(){
     var copy = new Cell(this.field);
     for (var attr in this) {
@@ -577,7 +622,7 @@ Cell.prototype = {
 };
 
 /*
-  ラベル
+  ラベルクラス
 */
 function Label(getX, getY, getWidth, getHeight, getText){
   this.getX = getX, this.getY = getY;
@@ -590,6 +635,7 @@ function Label(getX, getY, getWidth, getHeight, getText){
   this.bgColor = 'rgba(0, 0, 0, 0)';
 }
 Label.prototype = {
+  // 描画
   draw: function(ctx){
     var x = this.getX(), y = this.getY(), width = this.getWidth(), height = this.getHeight();
     ctx.beginPath();
@@ -607,7 +653,7 @@ Label.prototype = {
 }
 
 /*
-  地雷カウンター
+  地雷カウンタークラス
 */
 function MineCounter(getX, getY, getWidth, getHeight, field){
   Label.call(this, getX, getY, getWidth, getHeight, function(){return String(this.field.getMineNum()-this.field.getMarkNum())});
@@ -618,7 +664,7 @@ function MineCounter(getX, getY, getWidth, getHeight, field){
 MineCounter.prototype = Object.create(Label.prototype);
 
 /*
-  タイマー
+  タイマークラス
 */
 function Timer(getX, getY, getWidth, getHeight){
   Label.call(this, getX, getY, getWidth, getHeight, function(){return String(this.time)});
@@ -628,18 +674,23 @@ function Timer(getX, getY, getWidth, getHeight){
   this.time = 0;
 }
 Timer.prototype = Object.create(Label.prototype, {
+  // カウント開始
   start: {configurable: true, value: function(){
     this.time = 0;
     var self = this;
     this.timer = setInterval(function(){self.update()}, 1000);
   }},
+  // カウント再開
   resume: {configurable: true, value: function(){
     var self = this;
+    if(this.timer) clearInterval(this.timer);
     this.timer = setInterval(function(){self.update()}, 1000);
   }},
+  // カウント停止
   stop: {configurable: true, value: function(){
     clearInterval(this.timer);
   }},
+  // カウンターを回す
   update:  {configurable: true, value: function(){
     this.time++;
     render();
@@ -647,13 +698,14 @@ Timer.prototype = Object.create(Label.prototype, {
 });
 
 /*
-  ボタン
+  ボタンクラス
 */
 function Button(getX, getY, getWidth, getHeight, getText, action){
   Label.call(this, getX, getY, getWidth, getHeight, getText);
   this.action = action;
 }
 Button.prototype = Object.create(Label.prototype, {
+  // 左クリック
   click: {configurable: true, value: function(x, y){
     if(this.getX() < x && x < this.getX() + this.getWidth()){
       if(this.getY() < y && y < this.getY() + this.getHeight()){
@@ -664,7 +716,7 @@ Button.prototype = Object.create(Label.prototype, {
 });
 
 /*
-  リセットボタン
+  リセットボタンクラス
 */
 function ResetButton(getX, getY, getWidth, getHeight, field){
   Button.call(this, getX, getY, getWidth, getHeight, function(){return "Reset"}, function(){field.reset(); render()});
@@ -675,7 +727,7 @@ function ResetButton(getX, getY, getWidth, getHeight, field){
 ResetButton.prototype = Object.create(Button.prototype);
 
 /*
-  難易度ボタン
+  難易度ボタンクラス
 */
 function DifficultyButton(getX, getY, getWidth, getHeight, cellRow, cellCol, mineRatio, text, mineSweeper){
   Button.call(this, getX, getY, getWidth, getHeight, function(){return text}, function(){
