@@ -10,25 +10,44 @@ window.onload = function(){
   canvas.width = window.innerWidth*0.99;
   canvas.height = window.innerHeight*0.98;
   ctx = canvas.getContext('2d');
+  canvas.addEventListener('mousemove', mouseMove, true);
   canvas.addEventListener('click', click, true);
   canvas.addEventListener('contextmenu', contextMenu, true);
   window.addEventListener('keydown', keyDown, true);
 
-  mineSweeper = new MineSweeper();
-  mineSweeper.reset();
+  mineSweeper = new MineSweeper(0, 0, canvas.width, canvas.height);
+  render();
 }
 
 // 画面の大きさが変更された時
+var queue = null;
 window.onresize = function(){
   canvas.width = window.innerWidth*0.99;
   canvas.height = window.innerHeight*0.98;
-  render();
+
+  clearTimeout(queue);
+  queue = setTimeout(function(){
+    mineSweeper.resize(0, 0, canvas.width, canvas.height);
+    render();
+  }, 100);
 }
 
 // 描画
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   mineSweeper.draw(ctx);
+}
+
+// 一つの部品だけ再描画する
+function renderComponent(component) {
+  ctx.clearRect(component.x, component.y, component.width, component.height);
+  component.draw(ctx);
+}
+
+function mouseMove(event){
+  var rect = event.target.getBoundingClientRect()
+  var x = event.clientX-rect.left, y = event.clientY-rect.top;
+  mineSweeper.mouseMove(x, y);
 }
 
 function click(event){
@@ -48,28 +67,16 @@ function keyDown(event){
   var keyCode = event.keyCode;
   if(keyCode == 27){ // ESC
     event.preventDefault();
-    mineSweeper.reset();
+    mineSweeper.reset(); render();
   }else if(keyCode == 37){ // left
-    mineSweeper.undo();
+    mineSweeper.undo(); render();
   }else if(keyCode == 39){ // right
-    mineSweeper.redo();
+    mineSweeper.redo(); render();
   }else if(keyCode == 65){ // A
-    mineSweeper.swithAutoSolverMode();
+    mineSweeper.swithAutoSolverMode(); render();
   }else if(keyCode == 72){ // H
-    mineSweeper.swichHintMode();
+    mineSweeper.swichHintMode(); render();
   }else if(keyCode == 83){ // S
-    mineSweeper.switchSolvableMode();
+    mineSweeper.switchSolvableMode(); render();
   }
-}
-
-/*
-  ユーティリティ関数
-*/
-// 引数の要素がこの配列に含まれるかをbool型として返す
-Array.prototype.include = function(val){
-  var this_length = this.length;
-  for(i = 0; i < this_length; i++){
-    if(val === this[i]) return true;
-  }
-  return false;
 }

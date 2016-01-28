@@ -1,29 +1,50 @@
 /*
+  コンポーネントクラス
+
+  フィールド:
+    x: x座標
+    y: y座標
+    width: 幅
+    height: 高さ
+
+  メソッド:
+    resize(x, y, width, height): リサイズ
+    mouseMove(x, y): マウス移動
+    click(x, y): 左クリック
+    contextMenu(x, y): 右クリック
+    draw(ctx): 描画
+*/
+
+/*
   マインスイーパークラス
 */
-function MineSweeper(){
+function MineSweeper(x, y, width, height){
+  this.x = x, this.y = y;
+  this.width = width, this.height = height;
   var self = this;
-  var getDbMargin = function(){return self.getDbHeight()/3};
+  var getDbWidth = function(){return (self.width < self.height ? self.width : self.height) / 2};
+  var getDbHeight = function(){return (self.width < self.height ? self.width : self.height) / 8.5};
+  var getDbMargin = function(){return getDbHeight()/3};
 
-  this.titleLabel = new Label(function(){return canvas.width/2-self.getDbWidth()*1.375}, getDbMargin,
-  function(){return self.getDbWidth()*2.75}, this.getDbHeight, function(){return "Logical Minesweeper"});
+  this.titleLabel = new Label(function(){return self.x+self.width/2-getDbWidth()*1.375}, function(){return self.y+getDbMargin()},
+  function(){return getDbWidth()*2.75}, getDbHeight, function(){return "Logical Minesweeper"});
   this.titleLabel.fontStyle = 'italic';
   this.titleLabel.fontColor = 'rgba(0, 0, 0, 1)';
 
-  var getButtonX = function(){return canvas.width/2-self.getDbWidth()/2};
-  this.easyButton = new DifficultyButton(getButtonX, function(){return self.getDbHeight()+getDbMargin()*2}, this.getDbWidth, this.getDbHeight,
+  var getButtonX = function(){return self.x+self.width/2-getDbWidth()/2};
+  this.easyButton = new DifficultyButton(getButtonX, function(){return self.y+getDbHeight()+getDbMargin()*2}, getDbWidth, getDbHeight,
                     9, 9, 10/81, 'Easy', this); // 0.12345679
-  this.mediumButton = new DifficultyButton(getButtonX, function(){return self.getDbHeight()*2+getDbMargin()*3}, this.getDbWidth, this.getDbHeight,
+  this.mediumButton = new DifficultyButton(getButtonX, function(){return self.y+getDbHeight()*2+getDbMargin()*3}, getDbWidth, getDbHeight,
                     16, 16, 40/256, 'Medium', this); // 0.15625
-  this.hardButton = new DifficultyButton(getButtonX, function(){return self.getDbHeight()*3+getDbMargin()*4}, this.getDbWidth, this.getDbHeight,
+  this.hardButton = new DifficultyButton(getButtonX, function(){return self.y+getDbHeight()*3+getDbMargin()*4}, getDbWidth, getDbHeight,
                     16, 30, 99/480, 'Hard', this); // 0.20625
-  this.veryHardButton = new DifficultyButton(getButtonX, function(){return self.getDbHeight()*4+getDbMargin()*5}, this.getDbWidth, this.getDbHeight,
+  this.veryHardButton = new DifficultyButton(getButtonX, function(){return self.y+getDbHeight()*4+getDbMargin()*5}, getDbWidth, getDbHeight,
                     24, 48, 256/1152, 'Very Hard', this); // 0.22222
-  this.extremeButton = new DifficultyButton(getButtonX, function(){return self.getDbHeight()*5+getDbMargin()*6}, this.getDbWidth, this.getDbHeight,
+  this.extremeButton = new DifficultyButton(getButtonX, function(){return self.y+getDbHeight()*5+getDbMargin()*6}, getDbWidth, getDbHeight,
                     32, 64, 512/2048, 'Extreme', this); // 0.25
 
   this.field = null;
-  this.timer = new Timer(null, function(){return 0}, null, this.getCounterHeight);
+  this.timer = new Timer(null, function(){return self.y}, null, null);
   this.aModeLabel = new Label(null, null, null, function(){return 0}, function(){return "A"});
   this.hModeLabel = new Label(null, null, null, function(){return 0}, function(){return "H"});
   this.sModeLabel = new Label(null, null, null, function(){return 0}, function(){return "S"});
@@ -37,26 +58,25 @@ function MineSweeper(){
   this.solvableMode = true;
   this.cellRow = this.cellCol = this.mineRatio = null;
   this.clickListenComponents = this.contextMenuListenComponents = this.renderComponents = null;
+
+  this.reset();
 }
 MineSweeper.prototype = {
-  // 難易度選択ボタンの幅・高さを返す
-  getDbWidth: function(){return (canvas.width < canvas.height ? canvas.width : canvas.height) / 2},
-  getDbHeight: function(){return (canvas.width < canvas.height ? canvas.width : canvas.height) / 8.5},
-  // カウンターラベルの高さを返す
-  getCounterHeight: function(){return canvas.height / 12},
   // 難易度選択画面へ戻る
   reset: function(){
+    this.mouseMoveListenComponents = [this.easyButton, this.mediumButton, this.hardButton, this.veryHardButton, this.extremeButton];
     this.clickListenComponents = [this.easyButton, this.mediumButton, this.hardButton, this.veryHardButton, this.extremeButton];
     this.contextMenuListenComponents = [];
     this.renderComponents = [this.titleLabel, this.easyButton, this.mediumButton, this.hardButton, this.veryHardButton, this.extremeButton];
-    render();
+    this.resize(this.x, this.y, this.width, this.height);
   },
   // ゲームをセットアップする
   gameSetup: function(){
     var self = this;
+    var getCounterHeight = function(){return self.height / 12};
     var getCellSize = function(row, col){
-      var w = canvas.width/col;
-      var h = (canvas.height-self.getCounterHeight()*1.1)/row;
+      var w = self.width/col;
+      var h = (self.height-getCounterHeight()*1.1)/row;
       return w < h ? w : h;
     };
     var getCounterWidth = function(){return getCellSize(9, 9)*2};
@@ -64,29 +84,46 @@ MineSweeper.prototype = {
     var getFieldWidth = function(){return getFieldCellSize()*self.cellCol};
     var getFieldHeight = function(){return getFieldCellSize()*self.cellRow};
 
-    this.timer.getX = function(){return canvas.width/2+getFieldWidth()/2-getCounterWidth()};
-    this.timer.getWidth = getCounterWidth;
-    var getFieldX = function(){return canvas.width/2-getFieldWidth()/2};
-    var getFieldY = function(){var h = self.getCounterHeight(); return h + h/10};
+    this.timer.getX = function(){return self.x+self.width/2+getFieldWidth()/2-getCounterWidth()};
+    this.timer.getWidth = getCounterWidth; this.timer.getHeight = getCounterHeight;
+    this.timer.resize();
+    var getFieldX = function(){return self.x+self.width/2-getFieldWidth()/2};
+    var getFieldY = function(){var h = getCounterHeight(); return self.y+h*1.1};
     this.field = new Field(getFieldX, getFieldY, getFieldCellSize, getFieldCellSize,
       this.cellRow, this.cellCol, this.mineRatio, this.timer, this);
     this.field.reset();
 
-    var mineCounter = new MineCounter(getFieldX, function(){return 0}, getCounterWidth, this.getCounterHeight, this.field);
-    var resetButton = new ResetButton(function(){return canvas.width/2-getCounterWidth()}, function(){return 0},
-    function(){return getCounterWidth()*2}, this.getCounterHeight, this.field);
+    var mineCounter = new MineCounter(getFieldX, function(){return self.y}, getCounterWidth, getCounterHeight, this.field);
+    var resetButton = new ResetButton(function(){return self.x+self.width/2-getCounterWidth()}, function(){return self.y},
+    function(){return getCounterWidth()*2}, getCounterHeight, this.field);
 
     this.aModeLabel.getX = this.hModeLabel.getX = this.sModeLabel.getX = function(){return getFieldX()-getCounterWidth()/5};
-    this.aModeLabel.getY = function(){return getFieldHeight()/50};
-    this.hModeLabel.getY = function(){return getFieldHeight()*3.5/50};
-    this.sModeLabel.getY = function(){return getFieldHeight()*6/50};
+    this.aModeLabel.getY = function(){return self.y+getFieldHeight()/50};
+    this.hModeLabel.getY = function(){return self.y+getFieldHeight()*3.5/50};
+    this.sModeLabel.getY = function(){return self.y+getFieldHeight()*6/50};
     this.aModeLabel.getWidth = this.hModeLabel.getWidth = this.sModeLabel.getWidth = function(){return getCounterWidth()/10};
+    this.aModeLabel.resize(); this.hModeLabel.resize(); this.sModeLabel.resize();
 
+    this.mouseMoveListenComponents = [this.field, resetButton];
     this.clickListenComponents = [this.field, resetButton];
     this.contextMenuListenComponents = [this.field];
     this.renderComponents = [this.timer, this.aModeLabel, this.hModeLabel, this.sModeLabel, this.field, mineCounter, resetButton];
 
     render();
+  },
+  // リサイズ
+  resize: function(x, y, width, height){
+    this.x = x, this.y = y;
+    this.width = width, this.height = height;
+    this.renderComponents.forEach(function(component){
+      component.resize();
+    });
+  },
+  // マウス移動
+  mouseMove: function(x, y){
+    this.mouseMoveListenComponents.forEach(function(component){
+      component.mouseMove(x, y);
+    });
   },
   // 左クリック
   click: function(x, y){
@@ -119,21 +156,18 @@ MineSweeper.prototype = {
     this.autoSolverMode = !this.autoSolverMode;
     if(this.autoSolverMode) this.aModeLabel.fontColor = 'rgba(0, 255, 0, 1.0)';
     else this.aModeLabel.fontColor = 'rgba(0, 0, 0, 0.5)';
-    render();
   },
   // ヒント表示の切り換え
   swichHintMode: function(){
     this.hintMode = !this.hintMode;
     if(this.hintMode) this.hModeLabel.fontColor = 'rgba(0, 255, 0, 1.0)';
     else this.hModeLabel.fontColor = 'rgba(0, 0, 0, 0.5)';
-    render();
   },
   // 論理的盤面作成モードの切り換え
   switchSolvableMode: function(){
     this.solvableMode = !this.solvableMode;
     if(this.solvableMode) this.sModeLabel.fontColor = 'rgba(0, 255, 0, 1.0)';
     else this.sModeLabel.fontColor = 'rgba(0, 0, 0, 0.5)';
-    render();
   }
 }
 
@@ -144,8 +178,11 @@ function Field(getX, getY, getCellWidth, getCellHeight, cellRow, cellCol, mineRa
   this.getX = getX, this.getY = getY;
   this.getCellWidth = getCellWidth, this.getCellHeight = getCellHeight;
   this.cellRow = cellRow, this.cellCol = cellCol;
+  this.resize();
+
   this.mineRatio = mineRatio;
   this.cells = null;
+  this.onMouseCellPos = null;
   this.started = false;
   this.ended = false;
   this.gameCleared = false;
@@ -163,11 +200,49 @@ Field.prototype = {
   getMarkNum: function(){return this.getFilterdCells(function(fc){return fc.marked}).length},
   // 地雷であることが確定したセルの数を返す
   getFoundMinesNum: function(){return this.getFilterdCells(function(fc){return fc.probability > 0.99}).length;},
+  // リサイズ
+  resize : function(){
+    this.x = this.getX(), this.y = this.getY();
+    this.cellWidth = this.getCellWidth();
+    this.cellHeight = this.getCellHeight();
+    this.width = this.getCellWidth()*this.cellCol;
+    this.height = this.getCellHeight()*this.cellRow;
+    if(this.cells){
+      for(row = 0; row < this.cellRow; row++){
+        for(col = 0; col < this.cellCol; col++){
+          this.cells[row][col].resize();
+        }
+      }
+    }
+  },
+  // マウス移動
+  mouseMove: function(x, y){
+    if(this.ended){
+      return;
+    }
+    var onMouseCell = this.getCellXY(x, y);
+    if(onMouseCell){
+      if(this.onMouseCellPos &&
+        (onMouseCell.row != this.onMouseCellPos.row || onMouseCell.col != this.onMouseCellPos.col)){
+        this.cells[this.onMouseCellPos.row][this.onMouseCellPos.col].isOnMouse = false;
+        renderComponent(this.cells[this.onMouseCellPos.row][this.onMouseCellPos.col]);
+      }
+      this.onMouseCellPos = new function(){this.row = onMouseCell.row; this.col = onMouseCell.col;}
+      if(!onMouseCell.isOnMouse){
+        onMouseCell.isOnMouse = true;
+        renderComponent(onMouseCell);
+      }
+    }else{
+      if(this.onMouseCellPos){
+        this.cells[this.onMouseCellPos.row][this.onMouseCellPos.col].isOnMouse = false;
+        renderComponent(this.cells[this.onMouseCellPos.row][this.onMouseCellPos.col]);
+      }
+      this.onMouseCellPos = null;
+    }
+  },
   // 左クリック
   click : function(x, y){
-    var startTime = Date.now();
     this.clickCell(this.getCellXY(x, y));
-    console.log(Date.now()-startTime);
     render();
   },
   // 左クリック時のセルへのアクション
@@ -215,7 +290,6 @@ Field.prototype = {
       this.redoList.push(this.cloneCells());
       this.cells = this.undoList.pop();
       if(this.undoList.length <= 0) this.reset();
-      render();
       }
   },
   // 行動を一回やり直す
@@ -227,7 +301,6 @@ Field.prototype = {
         this.mineBang();
       }
       if(this.checkGameClear()) this.gameClear();
-      render();
     }
   },
   // ゲームをリセットする
@@ -259,10 +332,9 @@ Field.prototype = {
       }
     }
     if(this.gameCleared){
-      var x = canvas.width/2, y = canvas.height/2;
-      var width = this.getCellWidth()*this.cellCol, height = this.getCellHeight()*this.cellRow;
-      ctx.beginPath();
-      ctx.font = 'bold '+String(Math.floor(width*0.25))+'px Century Gothic';
+      var x = this.mineSweeper.x+this.mineSweeper.width/2;
+      var y = this.mineSweeper.y+this.mineSweeper.height/2;
+      ctx.font = 'bold '+String(Math.floor(this.width*0.25))+'px Century Gothic';
       ctx.shadowColor = "white";
       ctx.shadowOffsetX = ctx.shadowOffsetY = 5;
       ctx.shadowBlur = 5;
@@ -376,8 +448,8 @@ Field.prototype = {
         }
         if(updated){
           if(self.checkGameClear()) self.gameClear();
-          render();
           if(controller.running) setTimeout(act, self.autoSolveInterval);
+          render();
         }else{
           mineCells = self.getFilterdCells(function(fc){return !fc.marked && fc.probability > 0.99});
           safeCells = self.getFilterdCells(function(fc){return !fc.uncovered && fc.probability < 0.01});
@@ -447,14 +519,10 @@ Field.prototype = {
   },
   // 引数の座標に存在するセルを返す
   getCellXY : function(x, y){
-    for(row = 0; row < this.cellRow; row++){
-      for(col = 0; col < this.cellCol; col++){
-        var cell = this.cells[row][col];
-        if(cell.getX() < x && x < cell.getX() + this.getCellWidth()){
-          if(cell.getY() < y && y < cell.getY() + this.getCellHeight()){
-            return cell;
-          }
-        }
+    x -= this.x, y -= this.y;
+    if(0 < x && x < this.cellWidth*this.cellCol){
+      if(0 < y && y < this.cellHeight*this.cellRow){
+        return this.cells[Math.floor(y/this.cellHeight)][Math.floor(x/this.cellWidth)];
       }
     }
     return null;
@@ -530,22 +598,33 @@ Field.prototype = {
 function Cell(field, row, col){
   this.field = field;
 	this.row = row, this.col = col;
+  this.resize();
+
 	this.uncovered = false;
   this.marked = false;
   this.isMine = false;
   this.neighborMines = 0;
   this.probability = this.field.mineRatio;
   this.certainNeighbor = false;
+  this.isOnMouse = false;
 }
 Cell.prototype = {
   // セル間の隙間の大きさを返す
   getMargin: function(){return (this.field.getCellWidth() < this.field.getCellHeight() ?
-    this.field.getCellHeight() : this.field.getCellWidth())/10},
+    this.field.getCellHeight() : this.field.getCellWidth())/16},
   // このセルの幅・高さ・座標を返す
   getWidth: function(){return this.field.getCellWidth()-this.getMargin()},
   getHeight: function(){return this.field.getCellHeight()-this.getMargin()},
   getX: function(){return this.field.getX()+this.col*(this.getWidth()+this.getMargin())+this.getMargin()/2},
   getY: function(){return this.field.getY()+this.row*(this.getHeight()+this.getMargin())+this.getMargin()/2},
+  // リサイズ
+  resize: function(){
+    this.margin = this.getMargin();
+    this.width = this.getWidth();
+    this.height = this.getHeight();
+    this.x = this.getX(), this.y = this.getY();
+    this.numberFont = 'bold '+String(Math.floor(this.width*0.7))+'px Century Gothic';
+  },
   // このセルを開く
   uncover: function(){
     if(!this.uncovered){
@@ -558,17 +637,16 @@ Cell.prototype = {
   },
   // 描画
   draw: function(ctx){
-    var x = this.getX(), y = this.getY(), width = this.getWidth(), height = this.getHeight();
-    ctx.beginPath();
+    var r = g = b = 0;
     if(this.uncovered){
       if(this.isMine){
-        ctx.fillStyle = 'rgba(255, 50, 75, 0.75)';
+        r = 255, g = 50, b = 75;
       }else{
-        ctx.fillStyle = 'rgba(0, 50, 100, 0.75)';
+        r = 0, g = 50, b = 100;
       }
     }else{
       if(this.marked){
-        ctx.fillStyle = 'rgba(50, 200, 50, 0.75)';
+        r = 50, g = 200, b = 50;
       }else{
         if(this.field.mineSweeper.hintMode){
           var field = this.field;
@@ -577,25 +655,25 @@ Cell.prototype = {
           var r = Math.floor(50 + (prob < mR ? 0 : (prob-mR)/(1-mR)*205));
           var g = Math.floor(100 + (prob > mR ? 0 : (1-prob/mR)*55));
           var b = Math.floor(200 + (prob > mR ? 0 : (1-prob/mR)*55));
-          ctx.fillStyle = 'rgba('+String(r)+', '+String(g)+', '+String(b)+', 0.75)';
         }else if(this.field.ended && this.probability < 0.01){
-          ctx.fillStyle = 'rgba(50, 155, 255, 0.75)';
+          r = 50, g = 155, b = 255;
         }else{
-          ctx.fillStyle = 'rgba(50, 100, 200, 0.75)';
+          r = 50, g = 100, b = 200;
         }
       }
+      if(!this.field.ended && this.isOnMouse){
+        r += 15, g += 15, b += 15;
+      }
     }
-
-    ctx.rect(x, y, width, height);
-    ctx.fill();
+    ctx.fillStyle = 'rgba('+String(r)+', '+String(g)+', '+String(b)+', 0.75)';
+    ctx.fillRect(this.x, this.y, this.width, this.height);
 
     if(this.uncovered && !this.isMine && this.neighborMines > 0){
-      ctx.beginPath();
-      ctx.font = 'bold '+String(Math.floor(width*0.7))+'px Century Gothic';
+      ctx.font = this.numberFont;
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.fillStyle = 'rgba(255, 255, 255, 1.00)';
-      ctx.fillText(String(this.neighborMines), x+width/2, y+height/2);
+      ctx.fillText(String(this.neighborMines), this.x+this.width/2, this.y+this.height/2);
     }
   },
   // このセルの周囲1マスに存在するセルを配列に入れて返す
@@ -627,6 +705,8 @@ Cell.prototype = {
 function Label(getX, getY, getWidth, getHeight, getText){
   this.getX = getX, this.getY = getY;
   this.getWidth = getWidth, this.getHeight = getHeight;
+  this.resize();
+
   this.getText = getText;
   this.textSize = 0.07;
   this.fontFamily = 'Century Gothic';
@@ -635,20 +715,22 @@ function Label(getX, getY, getWidth, getHeight, getText){
   this.bgColor = 'rgba(0, 0, 0, 0)';
 }
 Label.prototype = {
+  // リサイズ
+  resize: function(){
+    this.x = this.getX ? this.getX() : null, this.y = this.getY ? this.getY() : null;
+    this.width = this.getWidth ? this.getWidth() : null;
+    this.height = this.getHeight ? this.getHeight() : null;
+  },
   // 描画
   draw: function(ctx){
-    var x = this.getX(), y = this.getY(), width = this.getWidth(), height = this.getHeight();
-    ctx.beginPath();
     ctx.fillStyle = this.bgColor;
-    ctx.rect(x, y, width, height);
-    ctx.fill();
+    ctx.fillRect(this.x, this.y, this.width, this.height);
 
-    ctx.beginPath();
-    ctx.font = this.fontStyle+' '+String(Math.floor(width*this.textSize))+'px '+this.fontFamily;
+    ctx.font = this.fontStyle+' '+String(Math.floor(this.width*this.textSize))+'px '+this.fontFamily;
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillStyle = this.fontColor;
-    ctx.fillText(this.getText(), x+width/2, y+height/2);
+    ctx.fillText(this.getText(), this.x+this.width/2, this.y+this.height/2);
   }
 }
 
@@ -703,14 +785,29 @@ Timer.prototype = Object.create(Label.prototype, {
 function Button(getX, getY, getWidth, getHeight, getText, action){
   Label.call(this, getX, getY, getWidth, getHeight, getText);
   this.action = action;
+  this.isOnMouse = false;
 }
 Button.prototype = Object.create(Label.prototype, {
+  // マウス移動
+  mouseMove: {configurable: true, value: function(x, y){
+    if(this.x < x && x < this.x + this.width && this.y < y && y < this.y + this.height){
+      if(!this.isOnMouse){
+        this.isOnMouse = true;
+        this.bgColor = this.selectedBgColor;
+        renderComponent(this);
+      }
+    }else{
+      if(this.isOnMouse){
+        this.isOnMouse = false;
+        this.bgColor = this.unselectedBgColor;
+        renderComponent(this);
+      }
+    }
+  }},
   // 左クリック
   click: {configurable: true, value: function(x, y){
-    if(this.getX() < x && x < this.getX() + this.getWidth()){
-      if(this.getY() < y && y < this.getY() + this.getHeight()){
-        this.action();
-      }
+    if(this.x < x && x < this.x + this.width && this.y < y && y < this.y + this.height){
+      this.action();
     }
   }}
 });
@@ -720,7 +817,8 @@ Button.prototype = Object.create(Label.prototype, {
 */
 function ResetButton(getX, getY, getWidth, getHeight, field){
   Button.call(this, getX, getY, getWidth, getHeight, function(){return "Reset"}, function(){field.reset(); render()});
-  this.bgColor = 'rgba(20, 40, 80, 0.75)';
+  this.unselectedBgColor = this.bgColor = 'rgba(20, 40, 80, 0.75)';
+  this.selectedBgColor = 'rgba(30, 50, 90, 0.75)';
   this.textSize = 0.2;
   this.field = field;
 }
@@ -736,7 +834,8 @@ function DifficultyButton(getX, getY, getWidth, getHeight, cellRow, cellCol, min
     mineSweeper.mineRatio = mineRatio;
     mineSweeper.gameSetup();
   });
-  this.bgColor = 'rgba(20, 40, 80, 0.75)';
+  this.unselectedBgColor = this.bgColor = 'rgba(20, 40, 80, 0.75)';
+  this.selectedBgColor = 'rgba(30, 50, 90, 0.75)';
   this.textSize = 0.1;
   this.cellRow = cellRow;
   this.cellCol = cellCol;
@@ -744,3 +843,15 @@ function DifficultyButton(getX, getY, getWidth, getHeight, cellRow, cellCol, min
   this.mineSweeper = mineSweeper
 }
 DifficultyButton.prototype = Object.create(Button.prototype);
+
+/*
+  ユーティリティ関数
+*/
+// 引数の要素がこの配列に含まれるかをbool型として返す
+Array.prototype.include = function(val){
+  var this_length = this.length;
+  for(i = 0; i < this_length; i++){
+    if(val === this[i]) return true;
+  }
+  return false;
+}
