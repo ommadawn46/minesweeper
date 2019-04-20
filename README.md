@@ -1,7 +1,7 @@
 # Logical Minesweeper
 "論理的に解ける"マインスイーパー  
 最後まで運に頼らず解くことができるように地雷が配置されます   
-- [https://ommadawn46.github.io/](https://ommadawn46.github.io/)  
+- [http://ommadawn46.github.io/minesweeper/](http://ommadawn46.github.io/minesweeper/) 
 
 HTML5 Canvas + JavaScript
 
